@@ -80,12 +80,22 @@ userSchema.method.genrateAccessToken = function (){
             fullName:  this.fullName
         },
         process.env.ACCESS_TOKEN_SECRET,{
-            expiresIn: process.env.CESS_TOKEN_EXPIRY
+            expiresIn: process.env.ACESS_TOKEN_EXPIRY
         }
     )
 }
 
-userSchema.method.genrateAccessToken = function ()
+userSchema.method.genrateRefreshToken = function (){
+    return jwt.sign(
+        {
+            _id:this._id,
+            
+        },
+        process.env.REFRESH_TOKEN_SECRET ,{
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
 
 
 export const User = mongoose.model("User", userSchema)
