@@ -4,6 +4,21 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponce } from "../utils/ApiResponse.js"
 
+const genrateAccessAndRefreshToken = async(userId) => {
+    try {
+        const user = await User.findById(userId)
+        const accessToken = user.genrateAccessToken()
+        const refreshToken = user.genrateRefreshToken()
+        
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave: false})
+
+        return {accessToken,refreshToken}
+
+    } catch (error) {
+        throw new ApiError(500,"something went wrong while genrating refresh token")
+    }
+}
 
 const regesterUser = asyncHandler( async (req, res ) => {
     
@@ -67,7 +82,52 @@ const regesterUser = asyncHandler( async (req, res ) => {
 })
 
 const loginUser = asyncHandler(async (req,res) => {
-        
+    const {email, userName, password} = req.body
+
+    if (!userName || !email) {
+        throw new ApiError(400, "username or password is required"  
+    }
+
+    const user = await User.findOne ({
+        $or:[{email},{userName}]
+    })
+
+    if (!user){
+        throw new ApiError(404, "user not found")
+    }
+
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid){
+        throw new ApiError(401, "invaild user cridiential")
+    }
+
+    const {accessToken, refreshToken} = await genrateAccessAndRefreshToken(user._id)
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshtoken")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res.status(200).cookie("acessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponce(
+                200,{
+                    user: loggedInUser,accessToken,refreshToken
+                },
+                "User logged in Sucessfully"
+            )
+        )
 })
 
-export { regesterUser }
+const logoutUser = asyncHandler(async(req,res) =>{
+    
+})
+
+export { 
+    regesterUser,
+    loginUser
+ }
