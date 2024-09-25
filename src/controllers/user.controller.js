@@ -236,17 +236,17 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 const getCurrentUser = asyncHandler(async(req, res) => {
     return res 
         .status(200)
-        .json(200,req.user, "currentuser fetched sucessfully")
+        .json(new ApiError(200,req.user, "currentuser fetched sucessfully"))
 })
 
-const updateAccountDetails = asyncHandler((req,res) => {
+const updateAccountDetails = asyncHandler(async (req,res) => {
     const { fullName, email} = req.body 
 
     if (!fullName || !email) {
         throw new ApiError(400,"all fields are required")
     }
 
-    const user = User.findByIdAndUpdate(req.user?._id,
+    const user = await User.findByIdAndUpdate(req.user?._id,
         {
             $set: {
                 fullName,
@@ -262,6 +262,7 @@ const updateAccountDetails = asyncHandler((req,res) => {
 })
 
 const updateUserAvatar = asyncHandler(async(req,res) =>{
+    const oldAvatar = req.user?.avatar
     const avatarLocalPath = req.file?.path
 
     if (!avatarLocalPath) {
@@ -275,7 +276,7 @@ const updateUserAvatar = asyncHandler(async(req,res) =>{
     }
 
     const user = await User.findByIdAndUpdate(
-        req.iser?._id,{
+        req.user?._id,{
             $set: {
                 avatar : avatar.url
             }
@@ -284,11 +285,17 @@ const updateUserAvatar = asyncHandler(async(req,res) =>{
         }
     ).select("-password")
 
+    if (oldAvatar && user ) {
+        const publicId = getPublicIdFromUrl(oldAvatar);
+        
+        // Delete the old avatar from Cloudinary
+        const deletionResult = await deleteFromCloudinary(publicId);
+        console.log('Old avatar deletion result:', deletionResult);    
+    }
 
     return res.status(200)
         .json(
             new ApiError (200,user, "Avatar Iamge update sucessfully")
-
         )
 
 })
@@ -332,4 +339,4 @@ export {
     updateAccountDetails,
     getCurrentUser,
     changeCurrentPassword
- }
+}
