@@ -4,22 +4,32 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponce } from "../utils/ApiResponse.js"
 
-const generateAccessAndRefereshTokens = async(userId) =>{
+const generateAccessAndRefreshTokens = async (userId) => {
     try {
-        const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error("User not found");
+            throw new ApiError(404, "User not found");
+        }
+        
+        console.log("User found:", user);
 
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
+        const accessToken = user.generateAccessToken();
+        console.log("Access token generated:", accessToken);
 
-        return {accessToken, refreshToken}
+        const refreshToken = user.generateRefreshToken(); 
+        console.log("Refresh token generated:", refreshToken);
 
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
 
+        return { accessToken, refreshToken };
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating referesh and access token")
+        console.error("Error generating tokens:", error);
+        throw new ApiError(500, "Something went wrong while generating refresh and access tokens");
     }
-}
+};
+
 
 const regesterUser = asyncHandler( async (req, res ) => {
     
@@ -85,8 +95,8 @@ const regesterUser = asyncHandler( async (req, res ) => {
 const loginUser = asyncHandler(async (req, res) =>{
     
     const {email, username, password} = req.body
-    console.log(email);
-
+    console.log("user login started");
+    console.log(email,password);
     if (!username && !email) {
         throw new ApiError(400, "username or email is required")
     }
@@ -95,17 +105,19 @@ const loginUser = asyncHandler(async (req, res) =>{
         $or: [{username}, {email}]
     })
 
+
     if (!user) {
         throw new ApiError(404, "User does not exist")
     }
 
    const isPasswordValid = await user.isPasswordCorrect(password)
+   console.log(isPasswordValid)
 
    if (!isPasswordValid) {
     throw new ApiError(401, "Invalid user credentials")
     }
 
-   const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
+   const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -136,7 +148,7 @@ const logoutUser = asyncHandler(async(req, res) => {
         req.user._id,
         {
             $unset: {
-                refreshToken: 1 // this removes the field from document
+                refreshToken: 1 
             }
         },
         {
