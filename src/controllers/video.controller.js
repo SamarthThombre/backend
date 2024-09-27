@@ -129,79 +129,84 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+    const { videoId } = req.params;
     const { title, description, thumbnail } = req.body;
-    
 
+    // Validate videoId
     if (!isValidObjectId(videoId)){
-        throw new ApiError(404, "Video does not exist");
+        throw new ApiError(400, "Invalid video ID format");
     }
 
-    // Step 2: Check if the video exists
-    const video = await VideoModel.findById(videoId);
-    if (!video) {
-        throw new ApiError(404, "Video not found")      
+    // Prepare update data
+    const updateData = {};
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (thumbnail) updateData.thumbnail = thumbnail;
+
+    // Update video details using findByIdAndUpdate
+    const updatedVideo = await VideoModel.findByIdAndUpdate(videoId, updateData, {
+        new: true, // Return the updated document
+        runValidators: true, // Validate before update
+    });
+
+    // Check if the video was found
+    if (!updatedVideo) {
+        throw new ApiError(404, "Video not found");
     }
 
-    if (!title || !description) {
-        throw new ApiError(400,"fields are required")
-    }
-
-    // Step 3: Update video details
-    if (title) video.title = title;
-    if (description) video.description = description;
-    if (thumbnail) video.thumbnail = thumbnail; // Update thumbnail if provided
-
-    const updatedVideo = await video.save(); // Save the updated video
-
-    // Step 4: Return updated video details
+    // Return updated video details
     return res.status(200).json({
         message: "Video updated successfully",
-        video: updatedVideo,}) 
-})
+        video: updatedVideo,
+    });
+});
+
 
 const deleteVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+    const { videoId } = req.params;
 
+    // Validate videoId
     if (!isValidObjectId(videoId)){
-        throw new ApiError(404, "Video does not exist");
+        throw new ApiError(400, "Invalid video ID format");
     }
 
-    // Find video by ID
-    const video = await VideoModel.findById(videoId);
+    // Find and delete the video by ID
+    const deletedVideo = await Video.findByIdAndDelete(videoId);
 
     // Check if video exists
-    if (!video) {
+    if (!deletedVideo) {
         throw new ApiError(404, "Video not found");
     }
-    
-    await Video.findByIdAndDelete(videoId)
 
-    return res.status(200).json(new ApiResponse(200,{},"video deleted successfully"))
-})
+    return res.status(200).json(new ApiResponse(200, {}, "Video deleted successfully"));
+});
+
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    
+    const { videoId } = req.params;
+
+    // Validate videoId
     if (!isValidObjectId(videoId)){
-        throw new ApiError(404, "Video does not exist");
+        throw new ApiError(400, "Invalid video ID format");
     }
 
-    // Find video by ID
+    // Find the video by ID
     const video = await VideoModel.findById(videoId);
 
-    // Check if video exists
+    // Check if the video exists
     if (!video) {
         throw new ApiError(404, "Video not found");
     }
 
-    Video.isPublished = !Video.isPublished;
+    // Toggle the publish status
+    video.isPublished = !video.isPublished;
 
-    await Video.save();
+    // Save the updated video
+    await video.save();
 
-    return res.status(200).json(new ApiResponse(200,video,"video status updated"))
+    return res.status(200).json(new ApiResponse(200, video, "Video status updated"));
+});
 
-})
 
 export {
     getAllVideos,
