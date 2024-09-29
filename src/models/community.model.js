@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const communitySchema = new Schema({
+const communityPostSchema = new Schema({
     content:{
         type: String,
         required:true,
@@ -14,4 +14,4 @@ const communitySchema = new Schema({
 })
 
 
-export const Community = mongoose.model("Community",  communitySchema)
+export const CommunityPost = mongoose.model("CommunityPost",  communityPostSchema)

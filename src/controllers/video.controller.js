@@ -191,7 +191,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     }
 
     // Find the video by ID
-    const video = await VideoModel.findById(videoId);
+    const video = await Video.findById(videoId);
 
     // Check if the video exists
     if (!video) {
