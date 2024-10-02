@@ -26,12 +26,12 @@ router.route("/login").post(loginUser)
 router.route("/logout").post(verifyJWT, logoutUser) 
 router.route("/refresh-token").post(refreshAcessToken)
 router.route("/change-password").post(verifyJWT, changeCurrentPassword )
-router.route("/").get(verifyJWT, getCurrentUser )
+router.route("/get-user").get(verifyJWT, getCurrentUser )
 router.route("/update-account").patch(verifyJWT, updateAccountDetails )
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar )
 router.route("/cover-image").patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage )
 
-router.route("/c/:username").get(verifyJWT, getUSerChannelProfile)
+router.route("/username").get(verifyJWT, getUSerChannelProfile)
 router.route("/history").get(verifyJWT, getWatchHistory)
 
 
